@@ -21,9 +21,23 @@ const LearningHub = () => {
     },
   ];
 
+  // Function to handle "View More" button click
+  const handleViewMoreClick = () => {
+    window.open('http://localhost:5175', '_blank'); // Replace with the desired URL
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Learning Hub</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Learning Hub</h1>
+        {/* View More Button */}
+        <button
+          onClick={handleViewMoreClick}
+          className="text-sm text-blue-500 hover:text-blue-700"
+        >
+          View More
+        </button>
+      </div>
       <div className="space-y-8">
         {categories.map((category, index) => (
           <div key={index} className="bg-white rounded-xl shadow-sm p-6">

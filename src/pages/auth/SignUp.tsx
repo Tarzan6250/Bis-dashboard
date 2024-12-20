@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AuthLayout } from '../../components/auth/AuthLayout';
 
 export const SignUp: React.FC = () => {
@@ -11,15 +11,50 @@ export const SignUp: React.FC = () => {
     gender: '',
     city: '',
   });
+  const [errorMessage, setErrorMessage] = useState('');
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle signup logic here
+
+    const { username, email, password, dob, gender, city } = formData;
+
+    // Basic validation
+    if (!username || !email || !password || !dob || !gender || !city) {
+      setErrorMessage('Please fill in all fields.');
+      return;
+    }
+
+    try {
+      // Sending POST request to the backend
+      const response = await fetch('http://localhost:5000/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, email, password, dob, gender, city }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // If the response is successful, redirect to login page
+        setErrorMessage('');
+        navigate('/login');
+      } else {
+        // Handle the error message returned by the backend
+        setErrorMessage(data.message || 'Something went wrong. Please try again.');
+      }
+    } catch (err) {
+      setErrorMessage('Something went wrong. Please try again later.');
+    }
   };
 
   return (
     <AuthLayout title="Create Account">
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Username and Email fields */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-gray-700">
@@ -48,6 +83,8 @@ export const SignUp: React.FC = () => {
             />
           </div>
         </div>
+
+        {/* Password field */}
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-gray-700">
             Password
@@ -61,6 +98,8 @@ export const SignUp: React.FC = () => {
             required
           />
         </div>
+
+        {/* Date of Birth */}
         <div>
           <label htmlFor="dob" className="block text-sm font-medium text-gray-700">
             Date of Birth
@@ -74,6 +113,8 @@ export const SignUp: React.FC = () => {
             required
           />
         </div>
+
+        {/* Gender and City fields */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
@@ -106,6 +147,11 @@ export const SignUp: React.FC = () => {
             />
           </div>
         </div>
+
+        {/* Error Message */}
+        {errorMessage && <p className="text-red-500 text-sm">{errorMessage}</p>}
+
+        {/* Submit button */}
         <button
           type="submit"
           className="w-full py-2 px-4 border border-transparent rounded-lg shadow-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -113,6 +159,8 @@ export const SignUp: React.FC = () => {
           Create Account
         </button>
       </form>
+
+      {/* Link to login page */}
       <p className="mt-4 text-center text-sm text-gray-600">
         Already have an account?{' '}
         <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
