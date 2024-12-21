@@ -1,53 +1,76 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthLayout } from '../../components/auth/AuthLayout';
+import axios from 'axios';
 
 export const SignUp: React.FC = () => {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
     password: '',
+    confirmPassword: '',
     dob: '',
     gender: '',
     city: '',
   });
+  const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
 
-  // Handle form submission
+  const validateForm = () => {
+    if (!formData.username || !formData.email || !formData.password || !formData.confirmPassword || 
+        !formData.dob || !formData.gender || !formData.city) {
+      setErrorMessage('Please fill in all fields.');
+      return false;
+    }
+
+    if (formData.password.length < 6) {
+      setErrorMessage('Password must be at least 6 characters long.');
+      return false;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setErrorMessage('Passwords do not match.');
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setErrorMessage('Please enter a valid email address.');
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const { username, email, password, dob, gender, city } = formData;
-
-    // Basic validation
-    if (!username || !email || !password || !dob || !gender || !city) {
-      setErrorMessage('Please fill in all fields.');
+    
+    if (!validateForm()) {
       return;
     }
 
+    setIsLoading(true);
+    setErrorMessage('');
+
     try {
-      // Sending POST request to the backend
-      const response = await fetch('http://localhost:5000/api/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, email, password, dob, gender, city }),
+      const response = await axios.post('http://localhost:5000/api/register', {
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        dob: formData.dob,
+        gender: formData.gender,
+        city: formData.city,
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        // If the response is successful, redirect to login page
-        setErrorMessage('');
+      if (response.status === 201) {
         navigate('/login');
-      } else {
-        // Handle the error message returned by the backend
-        setErrorMessage(data.message || 'Something went wrong. Please try again.');
       }
-    } catch (err) {
-      setErrorMessage('Something went wrong. Please try again later.');
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      setErrorMessage(error.response?.data?.message || 'Something went wrong. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -55,7 +78,7 @@ export const SignUp: React.FC = () => {
     <AuthLayout title="Create Account">
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Username and Email fields */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-gray-700">
               Username
@@ -63,9 +86,11 @@ export const SignUp: React.FC = () => {
             <input
               type="text"
               id="username"
+              name="username"
               value={formData.username}
               onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              disabled={isLoading}
               required
             />
           </div>
@@ -76,27 +101,48 @@ export const SignUp: React.FC = () => {
             <input
               type="email"
               id="email"
+              name="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              disabled={isLoading}
               required
             />
           </div>
         </div>
 
-        {/* Password field */}
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-            Password
-          </label>
-          <input
-            type="password"
-            id="password"
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            required
-          />
+        {/* Password fields */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              Password
+            </label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              disabled={isLoading}
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              id="confirmPassword"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              disabled={isLoading}
+              required
+            />
+          </div>
         </div>
 
         {/* Date of Birth */}
@@ -107,24 +153,28 @@ export const SignUp: React.FC = () => {
           <input
             type="date"
             id="dob"
+            name="dob"
             value={formData.dob}
             onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
-            className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            disabled={isLoading}
             required
           />
         </div>
 
         {/* Gender and City fields */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
               Gender
             </label>
             <select
               id="gender"
+              name="gender"
               value={formData.gender}
               onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-              className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              disabled={isLoading}
               required
             >
               <option value="">Select gender</option>
@@ -140,23 +190,30 @@ export const SignUp: React.FC = () => {
             <input
               type="text"
               id="city"
+              name="city"
               value={formData.city}
               onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-              className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              disabled={isLoading}
               required
             />
           </div>
         </div>
 
         {/* Error Message */}
-        {errorMessage && <p className="text-red-500 text-sm">{errorMessage}</p>}
+        {errorMessage && (
+          <div className="text-red-500 text-sm mt-2">
+            {errorMessage}
+          </div>
+        )}
 
         {/* Submit button */}
         <button
           type="submit"
-          className="w-full py-2 px-4 border border-transparent rounded-lg shadow-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+          disabled={isLoading}
         >
-          Create Account
+          {isLoading ? 'Creating Account...' : 'Create Account'}
         </button>
       </form>
 

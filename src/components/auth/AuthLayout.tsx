@@ -1,22 +1,24 @@
 import React from 'react';
-import { Target } from 'lucide-react';
 
 interface AuthLayoutProps {
   children: React.ReactNode;
-  title: string;
+  title?: string;
 }
 
-export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title }) => (
-  <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center p-4">
-    <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
-      <div className="flex items-center justify-center gap-3 mb-8">
-        <Target className="w-10 h-10 text-indigo-600" />
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-          BIS Arena
-        </h1>
+export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title }) => {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          {title}
+        </h2>
       </div>
-      <h2 className="text-2xl font-bold text-gray-800 text-center mb-6">{title}</h2>
-      {children}
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          {children}
+        </div>
+      </div>
     </div>
-  </div>
-); 
+  );
+};

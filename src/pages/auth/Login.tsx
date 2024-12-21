@@ -1,9 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthLayout } from '../../components/auth/AuthLayout';
+import axios from 'axios';
 
 interface LoginProps {
   onLogin: () => void;
+}
+
+interface LoginResponse {
+  token: string;
+  user: {
+    id: string;
+    email: string;
+    username: string;
+    profilePic?: string;
+  };
+  message: string;
 }
 
 export const Login: React.FC<LoginProps> = ({ onLogin }) => {
@@ -12,91 +24,125 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     password: '',
   });
   const [errorMessage, setErrorMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-
-  // Retrieve email directly from localStorage (if available)
-  useEffect(() => {
-    const storedEmail = localStorage.getItem('userEmail');
-    if (storedEmail) {
-      setFormData((prevData) => ({ ...prevData, email: storedEmail }));
-    }
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const { email, password } = formData;
-    if (!email || !password) {
-      setErrorMessage('Please enter both email and password.');
-      return;
-    }
+    setIsLoading(true);
+    setErrorMessage('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await axios.post<LoginResponse>(
+        'http://localhost:5000/api/login',
+        formData
+      );
 
-      const data = await response.json();
-      if (response.ok) {
-        // Store token in localStorage (or cookies) if needed
-        localStorage.setItem('userEmail', email); // Store email in localStorage
-        onLogin(); // Call onLogin to change app state
-        navigate('/'); // Navigate to the dashboard or home
-      } else {
-        setErrorMessage(data.message);
-      }
-    } catch (err) {
-      setErrorMessage('Something went wrong. Please try again later.');
+      const { token, user } = response.data;
+      
+      // Store authentication data
+      localStorage.setItem('token', token);
+      localStorage.setItem('userEmail', user.email);
+      
+      // Update app state
+      onLogin();
+      
+      // Navigate to dashboard
+      navigate('/');
+    } catch (error: any) {
+      console.error('Login error:', error);
+      setErrorMessage(
+        error.response?.data?.message || 
+        'An error occurred during login. Please try again.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+    if (errorMessage) {
+      setErrorMessage('');
     }
   };
 
   return (
-    <AuthLayout title="Welcome Back!">
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <AuthLayout title="Sign in to your account">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-            Email
+          <label 
+            htmlFor="email" 
+            className="block text-sm font-medium text-gray-700"
+          >
+            Email address
           </label>
-          <input
-            type="email"
-            id="email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            required
-          />
+          <div className="mt-1">
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={formData.email}
+              onChange={handleChange}
+              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              disabled={isLoading}
+            />
+          </div>
         </div>
+
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+          <label 
+            htmlFor="password" 
+            className="block text-sm font-medium text-gray-700"
+          >
             Password
           </label>
-          <input
-            type="password"
-            id="password"
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            required
-          />
+          <div className="mt-1">
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={formData.password}
+              onChange={handleChange}
+              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              disabled={isLoading}
+            />
+          </div>
         </div>
-        {errorMessage && <p className="text-red-500 text-sm">{errorMessage}</p>}
-        <button
-          type="submit"
-          className="w-full py-2 px-4 border border-transparent rounded-lg shadow-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-          Sign In
-        </button>
+
+        {errorMessage && (
+          <div className="text-sm text-red-600" role="alert">
+            {errorMessage}
+          </div>
+        )}
+
+        <div>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? 'Signing in...' : 'Sign in'}
+          </button>
+        </div>
+
+        <div className="text-sm text-center">
+          <Link 
+            to="/signup" 
+            className="font-medium text-indigo-600 hover:text-indigo-500"
+          >
+            Don't have an account? Sign up
+          </Link>
+        </div>
       </form>
-      <p className="mt-4 text-center text-sm text-gray-600">
-        Don't have an account?{' '}
-        <Link to="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
-          Sign up
-        </Link>
-      </p>
     </AuthLayout>
   );
 };
